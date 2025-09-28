@@ -63,34 +63,44 @@ A powerful, intelligent document organization system that automatically categori
 - Garantien & Bedienungsanleitungen
 - Private Projekte
 
+## ⚠️ **FIRST TIME SETUP REQUIRED**
+
+**Before using the organizer, you must install Python dependencies:**
+
+1. **Double-click `install_dependencies.bat`** (One-time setup)
+2. Wait for installation to complete
+3. You're ready to use the organizer!
+
 ## 🚀 **Quick Start**
 
 ### **Method 1: GUI Mode (Recommended)**
-1. **Download** the project files
+1. **Run `install_dependencies.bat`** (first time only)
 2. **Double-click** `organize_gui.bat`
 3. **Place files** in the `Unsorted` folder
 4. **Click "Process Files"** to organize
 5. **Use "Add Custom Folder"** to add new categories
 
 ### **Method 2: Command Line**
-```bash
-python -m dependencies.organizer.__main__ process "Unsorted" --output-base "Sorted"
-```
+1. **Run `install_dependencies.bat`** (first time only)
+2. **Double-click** `organize_files.bat`
 
 ### **Method 3: Batch Files**
+- **`install_dependencies.bat`** - Install required packages (first time)
 - **`organize_gui.bat`** - GUI mode
 - **`organize_files.bat`** - Command line mode
 
 ## 📋 **Installation Requirements**
 
-### **For Development:**
-```bash
-pip install -r dependencies/requirements.txt
-```
+### **For Client Use:**
+- **Python 3.7+** (Download from https://python.org)
+- **Internet connection** (for initial setup)
+- **Windows 10/11**
 
-### **For Standalone Use:**
-- **Windows 10/11** (64-bit)
-- **No additional software required** - Everything included!
+### **Setup Steps:**
+1. **Install Python** from https://python.org
+2. **IMPORTANT**: Check "Add Python to PATH" during installation
+3. **Run `install_dependencies.bat`** to install required packages
+4. **Ready to use!**
 
 ## 🔧 **How It Works**
 
