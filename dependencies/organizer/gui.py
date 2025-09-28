@@ -104,10 +104,15 @@ class App(tk.Tk):
 			# Save updated categories
 			_save_categories(categories)
 			
+			# Automatically add category name as keyword
+			from .classifier import add_custom_keywords
+			base_keywords = [folder_name.lower()]
+			add_custom_keywords(folder_name, base_keywords)
+			
 			# Clear input field
 			self.custom_folder_var.set("")
 			
-			messagebox.showinfo("Success", f"Custom folder '{folder_name}' added successfully!")
+			messagebox.showinfo("Success", f"Custom folder '{folder_name}' added successfully!\n\nKeywords: {', '.join(base_keywords)}")
 			
 		except Exception as e:
 			messagebox.showerror("Error", f"Failed to add custom folder: {str(e)}")
@@ -201,22 +206,27 @@ class App(tk.Tk):
 						# Save updated categories
 						_save_categories(categories)
 						
-						# Ask for keywords
+						# Automatically add category name as keyword
+						from .classifier import add_custom_keywords
+						base_keywords = [new_category.lower()]
+						
+						# Ask for additional keywords
 						keywords_text = simpledialog.askstring("Add Keywords", 
-							f"Enter keywords for '{new_category}' (comma-separated):\n\nExample: keyword1, keyword2, keyword3")
+							f"Enter additional keywords for '{new_category}' (comma-separated):\n\nNote: '{new_category}' is automatically added as a keyword.\n\nExample: keyword1, keyword2, keyword3\n\nLeave empty to use only category name as keyword.")
 						
 						if keywords_text and keywords_text.strip():
-							keywords = [kw.strip() for kw in keywords_text.split(",") if kw.strip()]
-							if keywords:
-								from .classifier import add_custom_keywords
-								add_custom_keywords(new_category, keywords)
+							additional_keywords = [kw.strip() for kw in keywords_text.split(",") if kw.strip()]
+							base_keywords.extend(additional_keywords)
+						
+						# Save keywords
+						add_custom_keywords(new_category, base_keywords)
 						
 						# Refresh the listbox
 						listbox.delete(0, tk.END)
 						for i, category in enumerate(categories, 1):
 							listbox.insert(tk.END, f"{i:2d}. {category}")
 						
-						messagebox.showinfo("Success", f"Category '{new_category}' added successfully!")
+						messagebox.showinfo("Success", f"Category '{new_category}' added successfully!\n\nKeywords: {', '.join(base_keywords)}")
 						
 					except Exception as e:
 						messagebox.showerror("Error", f"Failed to add category: {str(e)}")

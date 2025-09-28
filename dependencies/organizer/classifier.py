@@ -32,6 +32,7 @@ DEFAULT_CATEGORIES: List[str] = [
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 LEARNING_PATH = os.path.abspath(os.path.join(DATA_DIR, "learning.json"))
 CATEGORIES_PATH = os.path.abspath(os.path.join(DATA_DIR, "categories.json"))
+CUSTOM_KEYWORDS_PATH = os.path.abspath(os.path.join(DATA_DIR, "custom_keywords.json"))
 
 
 def _ensure_data_files() -> None:
@@ -42,6 +43,9 @@ def _ensure_data_files() -> None:
 	if not os.path.exists(CATEGORIES_PATH):
 		with open(CATEGORIES_PATH, "w", encoding="utf-8") as f:
 			json.dump(DEFAULT_CATEGORIES, f, ensure_ascii=False, indent=2)
+	if not os.path.exists(CUSTOM_KEYWORDS_PATH):
+		with open(CUSTOM_KEYWORDS_PATH, "w", encoding="utf-8") as f:
+			json.dump({}, f, ensure_ascii=False, indent=2)
 
 
 def _load_learning() -> Dict[str, str]:
@@ -68,6 +72,18 @@ def _save_categories(categories: List[str]) -> None:
 		json.dump(categories, f, ensure_ascii=False, indent=2)
 
 
+def _load_custom_keywords() -> Dict[str, List[str]]:
+	_ensure_data_files()
+	with open(CUSTOM_KEYWORDS_PATH, "r", encoding="utf-8") as f:
+		return json.load(f)
+
+
+def _save_custom_keywords(keywords: Dict[str, List[str]]) -> None:
+	_ensure_data_files()
+	with open(CUSTOM_KEYWORDS_PATH, "w", encoding="utf-8") as f:
+		json.dump(keywords, f, ensure_ascii=False, indent=2)
+
+
 def _normalize(text: str) -> str:
 	# Lowercase and normalize German umlauts for more robust matching
 	t = (text or "").lower()
@@ -81,7 +97,11 @@ def _normalize(text: str) -> str:
 
 
 def _keyword_rules() -> List[Tuple[str, List[str]]]:
-	return [
+	# Load custom keywords from file
+	custom_keywords = _load_custom_keywords()
+	
+	# Base keyword rules
+	base_rules = [
 		("Rechnungen", ["rechnung", "rechnungsnummer", "betrag", "steuer", "ust", "mwst", "fälligkeit"]),
 		("Mahnungen", ["mahnung", "zahlungserinnerung", "letzte mahnung"]),
 		("Quittungen", ["quittung", "kassenbon", "zahlung erhalten", "beleg"]),
@@ -132,7 +152,16 @@ def _keyword_rules() -> List[Tuple[str, List[str]]]:
 		("Fotos & Bilder", ["foto", "bild", "jpeg", "png"]),
 		("Musik & Videos", ["musik", "audio", "video", "mp3", "mp4"]),
 		("Allgemeine Dokumente / Sonstiges", ["dokument", "unterlage", "sonstiges"]),
+		("test", ["test", "testing", "test document", "test content", "dummy", "sample", "example"]),
 	]
+	
+	# Add custom keywords to the rules (at the beginning for priority)
+	custom_rules = []
+	for category, keywords in custom_keywords.items():
+		custom_rules.append((category, keywords))
+	
+	# Return custom rules first, then base rules
+	return custom_rules + base_rules
 
 
 def classify_text(text: str) -> str:
@@ -169,3 +198,10 @@ def learn(text: str, category: str) -> None:
 	snippet = _normalize(text).strip()[:500]
 	store[snippet] = category
 	_save_learning(store)
+
+
+def add_custom_keywords(category: str, keywords: List[str]) -> None:
+	"""Add custom keywords for a category"""
+	custom_keywords = _load_custom_keywords()
+	custom_keywords[category] = keywords
+	_save_custom_keywords(custom_keywords)
