@@ -152,7 +152,6 @@ def _keyword_rules() -> List[Tuple[str, List[str]]]:
 		("Fotos & Bilder", ["foto", "bild", "jpeg", "png"]),
 		("Musik & Videos", ["musik", "audio", "video", "mp3", "mp4"]),
 		("Allgemeine Dokumente / Sonstiges", ["dokument", "unterlage", "sonstiges"]),
-		("test", ["test", "testing", "test document", "test content", "dummy", "sample", "example"]),
 	]
 	
 	# Add custom keywords to the rules (at the beginning for priority)
@@ -169,11 +168,38 @@ def classify_text(text: str) -> str:
 	if not text_norm.strip():
 		return "Unknown"
 
-	# Rule-based keywords
-	for category, keywords in _keyword_rules():
+	# Rule-based keywords - prioritize longer, more specific matches
+	rules = _keyword_rules()
+	
+	# Sort rules by keyword length (longer keywords first) for better specificity
+	sorted_rules = []
+	for category, keywords in rules:
 		for kw in keywords:
-			if kw in text_norm:
-				return category
+			sorted_rules.append((len(kw), category, kw))
+	
+	# Sort by length descending, then by category name
+	sorted_rules.sort(key=lambda x: (-x[0], x[1]))
+	
+	for _, category, kw in sorted_rules:
+		if kw in text_norm:
+			return category
+	
+	# Try fuzzy matching for OCR errors
+	from rapidfuzz import fuzz
+	best_fuzzy_match = None
+	best_fuzzy_score = 0
+	
+	for _, category, kw in sorted_rules:
+		# Check if keyword is similar to any word in the text
+		words = text_norm.split()
+		for word in words:
+			score = fuzz.ratio(kw, word)
+			if score > 80 and score > best_fuzzy_score:  # 80% similarity threshold
+				best_fuzzy_match = category
+				best_fuzzy_score = score
+	
+	if best_fuzzy_match:
+		return best_fuzzy_match
 
 	# Fuzzy match against learned exemplars
 	learning = _load_learning()

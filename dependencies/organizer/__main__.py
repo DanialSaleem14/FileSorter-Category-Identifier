@@ -41,8 +41,32 @@ def process_directory(input_dir: str, output_base: Optional[str] = None, interac
 			# Extract text then classify
 			text = extract_text_from_file(path)
 			pred = classify_text(text)
-			# If Unknown, use extension hints
-			if pred == "Unknown":
+			
+			# Special handling for images - try filename analysis if OCR failed
+			if pred == "Unknown" and text.strip() == "":
+				ext = os.path.splitext(path)[1].lower()
+				if ext in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}:
+					# Try to classify based on filename patterns
+					filename_lower = name.lower()
+					if any(keyword in filename_lower for keyword in ["rechnung", "invoice", "bill"]):
+						pred = "Rechnungen"
+					elif any(keyword in filename_lower for keyword in ["zertifikat", "certificate", "zeugnis", "diploma"]):
+						pred = "Zertifikate"
+					elif any(keyword in filename_lower for keyword in ["vertrag", "contract", "agreement"]):
+						pred = "Verträge"
+					elif any(keyword in filename_lower for keyword in ["versicherung", "insurance"]):
+						pred = "Versicherungen"
+					elif any(keyword in filename_lower for keyword in ["ausweis", "pass", "passport", "id"]):
+						pred = "Persönlich"
+					elif any(keyword in filename_lower for keyword in ["screenshot", "screen", "bildschirm"]):
+						pred = "Fotos & Bilder"
+					else:
+						# Default to extension-based classification for images
+						ext_hint = _detect_category_from_extension(path)
+						if ext_hint:
+							pred = ext_hint
+			elif pred == "Unknown":
+				# For non-images, use extension hints
 				ext_hint = _detect_category_from_extension(path)
 				if ext_hint:
 					pred = ext_hint

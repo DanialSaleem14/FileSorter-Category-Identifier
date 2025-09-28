@@ -23,14 +23,18 @@ def _ensure_tesseract_path() -> None:
 		r"C:\Program Files\Tesseract-OCR\tesseract.exe",
 		r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
 		r"C:\Users\{}\AppData\Local\Programs\Tesseract-OCR\tesseract.exe".format(os.getenv("USERNAME", "")),
+		r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+		r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
 	]
 	
 	for tesseract_path in common_paths:
 		if os.path.exists(tesseract_path):
 			pytesseract.pytesseract.tesseract_cmd = tesseract_path
+			print(f"[green]Tesseract found at: {tesseract_path}[/]")
 			return
 	
 	# If not found, try the default (may work if in PATH)
+	print("[yellow]Tesseract not found in common locations. Trying system PATH...[/]")
 	# pytesseract will use the default 'tesseract' command
 
 
@@ -41,15 +45,39 @@ def extract_text_from_image(path: str) -> str:
 			# Convert to RGB if needed
 			if img.mode != 'RGB':
 				img = img.convert('RGB')
-			# Try German first, fallback to English if German not available
-			try:
-				text = pytesseract.image_to_string(img, lang='deu+eng')
-			except Exception:
-				# Fallback to English if German language pack not available
-				text = pytesseract.image_to_string(img, lang='eng')
+			
+			# Improve image quality for better OCR
+			# Resize if too small
+			if img.width < 300 or img.height < 100:
+				img = img.resize((img.width * 2, img.height * 2), Image.Resampling.LANCZOS)
+			
+			# Try to get text with multiple language combinations and configurations
+			text = ""
+			configs = [
+				('deu+eng', '--psm 6'),  # Uniform block of text
+				('eng+deu', '--psm 6'),
+				('deu+eng', '--psm 3'),  # Fully automatic page segmentation
+				('eng+deu', '--psm 3'),
+				('eng', '--psm 6'),
+				('deu', '--psm 6'),
+			]
+			
+			for lang, psm in configs:
+				try:
+					text = pytesseract.image_to_string(img, lang=lang, config=psm)
+					if text.strip():
+						print(f"[green]OCR successful for {path} with language: {lang}, config: {psm}[/]")
+						break
+				except Exception as e:
+					print(f"[yellow]OCR failed for {path} with language {lang}, config {psm}: {e}[/]")
+					continue
+			
+			if not text.strip():
+				print(f"[red]OCR failed completely for {path} - no text extracted[/]")
+			
 			return text
 	except Exception as e:
-		print(f"[yellow]OCR failed for {path}: {e}[/]")
+		print(f"[red]Image processing failed for {path}: {e}[/]")
 		return ""
 
 
